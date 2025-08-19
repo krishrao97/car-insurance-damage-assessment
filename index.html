@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Insurance Damage Assessment</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        header {
+            text-align: center; margin-bottom: 3rem; padding: 2rem;
+            background: linear-gradient(135deg, #0033A0 0%, #78BE20 100%);
+            color: white; border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 51, 160, 0.3);
+        }
+        header h1 { margin-bottom: 0.5rem; font-size: 2.8rem; font-weight: bold; }
+        .step-section {
+            background: white; padding: 2.5rem; border-radius: 15px; 
+            margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            border: 2px solid #e9ecef;
+        }
+        .step-header { display: flex; align-items: center; margin-bottom: 2rem; 
+                      padding-bottom: 1rem; border-bottom: 3px solid #78BE20; }
+        .step-number {
+            background: linear-gradient(135deg, #0033A0 0%, #78BE20 100%);
+            color: white; width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold; margin-right: 1rem;
+        }
+        .step-title { font-size: 1.8rem; font-weight: bold; color: #0033A0; }
+        .input-group { margin-bottom: 1.5rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333; }
+        .input-group input { width: 100%; padding: 0.75rem; border: 2px solid #ddd; 
+                           border-radius: 5px; font-size: 1rem; }
+        .analyze-btn {
+            width: 100%; padding: 1.2rem 2rem; 
+            background: linear-gradient(135deg, #0033A0 0%, #78BE20 100%);
+            color: white; border: none; border-radius: 8px; font-size: 1.2rem;
+            font-weight: bold; cursor: pointer; transition: all 0.3s ease;
+        }
+        .analyze-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .analyze-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .analysis-mode {
+            padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem;
+            font-weight: 600; margin-top: 1rem; text-align: center;
+        }
+        .analysis-mode.real-ai {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white; box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+        }
+        .result-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+            border-left: 5px solid #78BE20; box-shadow: 0 3px 15px rgba(0,0,0,0.05);
+        }
+        .result-card h3 { color: #0033A0; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold; }
+        .metadata { display: flex; flex-direction: column; gap: 0.5rem; }
+        .metadata span { font-size: 1.1rem; }
+        .cost { font-size: 1.5rem; font-weight: bold; color: #78BE20; }
+        .hidden { display: none; }
+        .preview-image { max-width: 100%; max-height: 300px; border-radius: 10px; 
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin: 1rem 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Car Insurance Damage Assessment</h1>
+            <p>Upload a photo of your damaged car to get an instant AI-powered assessment</p>
+        </header>
+
+        <div class="step-section">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div class="step-title">Upload Image</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="file-upload">Upload car damage photo:</label>
+                <input id="file-upload" type="file" accept="image/*">
+            </div>
+
+            <div style="text-align: center; margin: 1.5rem 0; font-weight: 600; color: #666; position: relative;">
+                <span style="background: white; padding: 0 1rem;">OR</span>
+                <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #ddd; z-index: -1;"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="image-url">Paste image URL:</label>
+                <input id="image-url" type="url" placeholder="https://example.com/car-damage-photo.jpg" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 5px; font-size: 1rem;">
+            </div>
+
+            <button id="analyze-btn" class="analyze-btn">
+                Analyze with AI
+            </button>
+            
+            <img id="preview" class="preview-image hidden" alt="Preview">
+            <div id="message" style="margin-top: 1rem;"></div>
+        </div>
+
+        <div id="results-section" class="step-section hidden">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div class="step-title">AI Analysis Results</div>
+            </div>
+            
+            <div id="analysis-mode-indicator" class="analysis-mode real-ai">
+                🤖 AI Vision Analysis
+            </div>
+            
+            <div class="result-card">
+                <h3>Vehicle Information</h3>
+                <div class="metadata">
+                    <span><strong>Make:</strong> <span id="car-make"></span></span>
+                    <span><strong>Model:</strong> <span id="car-model"></span></span>
+                    <span><strong>Color:</strong> <span id="car-color"></span></span>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <h3>Damage Assessment</h3>
+                <p id="damage-summary"></p>
+            </div>
+
+            <div class="result-card">
+                <h3>Repair Cost Estimate</h3>
+                <p class="cost" id="estimated-cost"></p>
+            </div>
+        </div>
+
+        <div id="location-section" class="step-section hidden">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div class="step-title">Find Nearby Repair Shops</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="location-input">Enter your location:</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input id="location-input" type="text" placeholder="Enter city, state or zip code" style="flex: 1;">
+                    <button id="current-location-btn" style="background: #0033A0; color: white; border: none; padding: 0.75rem 1rem; border-radius: 5px; cursor: pointer;">Use Current Location</button>
+                </div>
+            </div>
+
+            <button id="find-shops-btn" style="width: 100%; padding: 1rem 2rem; background: linear-gradient(135deg, #0033A0 0%, #78BE20 100%); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 1rem;" disabled>
+                Find Repair Shops
+            </button>
+
+            <div id="location-message" style="margin-top: 1rem; padding: 1rem; border-radius: 5px; text-align: center; display: none;"></div>
+        </div>
+
+        <div id="shops-section" class="step-section hidden">
+            <div class="step-header">
+                <div class="step-number">📍</div>
+                <div class="step-title">Recommended Repair Shops</div>
+            </div>
+            
+            <div id="shops-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileUpload = document.getElementById('file-upload');
+        const imageUrl = document.getElementById('image-url');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const preview = document.getElementById('preview');
+        const message = document.getElementById('message');
+        const resultsSection = document.getElementById('results-section');
+        
+        // Step 3 elements
+        const locationSection = document.getElementById('location-section');
+        const locationInput = document.getElementById('location-input');
+        const currentLocationBtn = document.getElementById('current-location-btn');
+        const findShopsBtn = document.getElementById('find-shops-btn');
+        const locationMessage = document.getElementById('location-message');
+        const shopsSection = document.getElementById('shops-section');
+        const shopsList = document.getElementById('shops-list');
+        
+        let userLocation = null;
+
+        fileUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                imageUrl.value = ''; // Clear URL input
+                const url = URL.createObjectURL(file);
+                preview.src = url;
+                preview.classList.remove('hidden');
+                analyzeBtn.disabled = false;
+                message.textContent = 'Image loaded - ready for analysis!';
+                message.style.color = '#28a745';
+            } else {
+                message.textContent = 'Please select a valid image file';
+                message.style.color = '#dc3545';
+            }
+        });
+
+        imageUrl.addEventListener('input', function(e) {
+            const url = e.target.value.trim();
+            if (url) {
+                fileUpload.value = ''; // Clear file input
+                
+                // Try to load preview image with error handling
+                preview.onload = function() {
+                    preview.classList.remove('hidden');
+                    message.textContent = 'Image URL loaded - ready for analysis!';
+                    message.style.color = '#28a745';
+                };
+                
+                preview.onerror = function() {
+                    preview.classList.add('hidden');
+                    message.textContent = 'Could not load image preview, but URL will be sent to AI for analysis.';
+                    message.style.color = '#ffc107';
+                };
+                
+                preview.src = url;
+                analyzeBtn.disabled = false;
+            } else {
+                preview.classList.add('hidden');
+                analyzeBtn.disabled = true;
+                message.textContent = '';
+            }
+        });
+
+        analyzeBtn.addEventListener('click', async function() {
+            const file = fileUpload.files[0];
+            const urlInput = imageUrl.value.trim();
+            
+            if (!file && !urlInput) {
+                message.textContent = 'Please select an image file or provide an image URL!';
+                message.style.color = '#dc3545';
+                return;
+            }
+
+            analyzeBtn.textContent = 'Analyzing with AI...';
+            analyzeBtn.disabled = true;
+            message.textContent = 'Processing image and calling AI Vision API...';
+            message.style.color = '#007bff';
+
+            try {
+                let imageData;
+                
+                if (file) {
+                    // Convert file to base64
+                    const reader = new FileReader();
+                    imageData = await new Promise((resolve) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                } else {
+                    // Use URL directly
+                    imageData = urlInput;
+                }
+
+                // Call our working backend
+                const response = await fetch('http://localhost:3001/api/analyze-simple', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageData: imageData })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Display results
+                    document.getElementById('car-make').textContent = result.data.metadata.make;
+                    document.getElementById('car-model').textContent = result.data.metadata.model;
+                    document.getElementById('car-color').textContent = result.data.metadata.color;
+                    document.getElementById('damage-summary').textContent = result.data.damageSummary;
+                    document.getElementById('estimated-cost').textContent = result.data.estimatedCost;
+
+                    resultsSection.classList.remove('hidden');
+                    message.textContent = '✅ AI analysis completed successfully!';
+                    message.style.color = '#28a745';
+
+                    // Show Step 3 after successful analysis
+                    setTimeout(() => {
+                        locationSection.classList.remove('hidden');
+                        message.textContent = 'Analysis complete! Now find nearby repair shops to get your car fixed.';
+                    }, 1000);
+
+                    resultsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    message.textContent = '❌ Analysis failed: ' + result.error;
+                    message.style.color = '#dc3545';
+                }
+            } catch (error) {
+                message.textContent = '❌ Connection error: ' + error.message;
+                message.style.color = '#dc3545';
+            } finally {
+                analyzeBtn.textContent = 'Analyze with AI';
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // Step 3: Location and Repair Shop Functions
+        function getCurrentLocation() {
+            currentLocationBtn.disabled = true;
+            currentLocationBtn.textContent = 'Getting Location...';
+            
+            if (!navigator.geolocation) {
+                showLocationMessage('Geolocation is not supported by this browser', 'error');
+                currentLocationBtn.disabled = false;
+                currentLocationBtn.textContent = 'Use Current Location';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    locationInput.value = `Current Location (${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)})`;
+                    findShopsBtn.disabled = false;
+                    showLocationMessage('Location found! You can now find nearby repair shops.', 'success');
+                    
+                    currentLocationBtn.disabled = false;
+                    currentLocationBtn.textContent = 'Use Current Location';
+                },
+                (error) => {
+                    let errorMessage = 'Unable to get your location. ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Please allow location access and try again.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Location request timed out.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred.';
+                            break;
+                    }
+                    
+                    showLocationMessage(errorMessage, 'error');
+                    currentLocationBtn.disabled = false;
+                    currentLocationBtn.textContent = 'Use Current Location';
+                }
+            );
+        }
+
+        async function geocodeLocation(locationText) {
+            try {
+                const response = await fetch('http://localhost:3001/api/geocode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ address: locationText })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.location) {
+                    return {
+                        lat: result.location.lat,
+                        lng: result.location.lng,
+                        formatted_address: result.location.formatted_address
+                    };
+                } else {
+                    // Fallback to San Francisco
+                    return { lat: 37.7749, lng: -122.4194 };
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                // Fallback to San Francisco
+                return { lat: 37.7749, lng: -122.4194 };
+            }
+        }
+
+        async function findRepairShops() {
+            if (!userLocation && !locationInput.value.trim()) {
+                showLocationMessage('Please enter a location or use current location', 'error');
+                return;
+            }
+
+            findShopsBtn.disabled = true;
+            findShopsBtn.textContent = 'Searching Real Shops...';
+            hideLocationMessage();
+            
+            try {
+                let searchLocation = userLocation;
+                
+                if (!searchLocation && locationInput.value.trim()) {
+                    showLocationMessage('Geocoding your address...', 'info');
+                    searchLocation = await geocodeLocation(locationInput.value.trim());
+                    
+                    if (searchLocation.formatted_address) {
+                        showLocationMessage(`Found location: ${searchLocation.formatted_address}`, 'success');
+                    }
+                }
+
+                const response = await fetch('http://localhost:3001/api/repair-shops', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        latitude: searchLocation.lat,
+                        longitude: searchLocation.lng
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.shops) {
+                    displayRepairShops(result.shops);
+                    showLocationMessage(`Found ${result.shops.length} repair shops near you!`, 'success');
+                } else {
+                    showLocationMessage('Unable to find repair shops. Please try a different location.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error finding repair shops:', error);
+                showLocationMessage('Error connecting to repair shop service. Please try again.', 'error');
+            } finally {
+                findShopsBtn.disabled = false;
+                findShopsBtn.textContent = 'Find Repair Shops';
+            }
+        }
+
+        function displayRepairShops(shops) {
+            shopsList.innerHTML = '';
+            
+            shops.forEach(shop => {
+                const shopElement = document.createElement('div');
+                shopElement.style.cssText = `
+                    background: white; border: 2px solid #e9ecef; border-radius: 10px; 
+                    padding: 1.5rem; margin-bottom: 1rem; transition: all 0.2s ease;
+                `;
+                shopElement.addEventListener('mouseenter', () => {
+                    shopElement.style.borderColor = '#0033A0';
+                    shopElement.style.transform = 'translateY(-2px)';
+                    shopElement.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+                });
+                shopElement.addEventListener('mouseleave', () => {
+                    shopElement.style.borderColor = '#e9ecef';
+                    shopElement.style.transform = 'translateY(0)';
+                    shopElement.style.boxShadow = 'none';
+                });
+                
+                const ratingText = shop.totalRatings ? 
+                    `⭐ ${shop.rating}/5.0 (${shop.totalRatings} reviews)` : 
+                    `⭐ ${shop.rating}/5.0 rating`;
+                
+                let contactButtons = '';
+                if (shop.phone) {
+                    contactButtons += `<a href="tel:${shop.phone}" style="background: #78BE20; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; font-size: 0.9rem; font-weight: 600; margin-right: 0.5rem; display: inline-block;">📞 Call ${shop.phone}</a>`;
+                }
+                if (shop.website) {
+                    const websiteUrl = shop.website.startsWith('http') ? shop.website : `https://${shop.website}`;
+                    contactButtons += `<a href="${websiteUrl}" target="_blank" style="background: #0033A0; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; font-size: 0.9rem; font-weight: 600; display: inline-block;">🌐 Visit Website</a>`;
+                }
+                
+                let statusIndicator = '';
+                if (shop.isOpen !== null) {
+                    statusIndicator = shop.isOpen ? 
+                        '<div style="color: #78BE20; font-weight: bold;">🟢 Open Now</div>' : 
+                        '<div style="color: #e74c3c; font-weight: bold;">🔴 Closed</div>';
+                }
+                
+                shopElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.2rem; font-weight: bold; color: #0033A0; margin: 0;">${shop.name}</h3>
+                        <span style="background: #78BE20; color: white; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.85rem; font-weight: bold;">${shop.distance.toFixed(1)} mi</span>
+                    </div>
+                    <div style="color: #666; margin-bottom: 0.5rem;">📍 ${shop.address}</div>
+                    <div style="color: #666; margin-bottom: 0.5rem;">${ratingText}</div>
+                    ${statusIndicator}
+                    <div style="margin-top: 1rem;">
+                        ${contactButtons}
+                    </div>
+                `;
+                shopsList.appendChild(shopElement);
+            });
+            
+            shopsSection.classList.remove('hidden');
+            shopsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showLocationMessage(text, type) {
+            locationMessage.textContent = text;
+            locationMessage.style.display = 'block';
+            if (type === 'success') {
+                locationMessage.style.background = '#28a745';
+                locationMessage.style.color = 'white';
+            } else if (type === 'info') {
+                locationMessage.style.background = '#007bff';
+                locationMessage.style.color = 'white';
+            } else {
+                locationMessage.style.background = '#dc3545';
+                locationMessage.style.color = 'white';
+            }
+        }
+
+        function hideLocationMessage() {
+            locationMessage.style.display = 'none';
+        }
+
+        // Event listeners for Step 3
+        currentLocationBtn.addEventListener('click', getCurrentLocation);
+        
+        locationInput.addEventListener('input', function(e) {
+            const hasInput = e.target.value.trim().length > 0;
+            findShopsBtn.disabled = !hasInput && !userLocation;
+            hideLocationMessage();
+        });
+        
+        findShopsBtn.addEventListener('click', findRepairShops);
+    </script>
+</body>
+</html>

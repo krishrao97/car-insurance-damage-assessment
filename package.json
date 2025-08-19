@@ -1,0 +1,24 @@
+{
+  "name": "car-insurance-damage-assessment",
+  "version": "2.0.0",
+  "description": "AI-powered car insurance damage assessment with repair shop finder",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "car-insurance",
+    "damage-assessment",
+    "openai",
+    "google-places",
+    "ai",
+    "computer-vision"
+  ],
+  "author": "Claude Code Assistant",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

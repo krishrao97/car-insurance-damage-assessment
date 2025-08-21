@@ -130,6 +130,43 @@
             <div class="result-card">
                 <h3>Repair Cost Estimate</h3>
                 <p class="cost" id="estimated-cost"></p>
+                <div id="cost-breakdown" class="hidden" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #78BE20;">
+                    <h4 style="color: #0033A0; margin-bottom: 0.5rem;">Cost Breakdown:</h4>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span>Parts & Labor:</span>
+                        <span id="parts-cost">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span>Paint Work:</span>
+                        <span id="paint-cost">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Additional Fees:</span>
+                        <span id="surcharge-cost">$0</span>
+                    </div>
+                    <hr style="margin: 0.5rem 0;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; color: #0033A0;">
+                        <span>Estimated Total:</span>
+                        <span id="midpoint-cost">$0</span>
+                    </div>
+                </div>
+                <div id="confidence-indicator" class="hidden" style="margin-top: 0.5rem; text-align: center; font-size: 0.9rem; color: #666;">
+                    Confidence: <span id="confidence-value">0%</span>
+                </div>
+            </div>
+
+            <div id="additional-info" class="result-card hidden">
+                <h3>Additional Assessment</h3>
+                <div style="display: flex; gap: 2rem;">
+                    <div>
+                        <strong>Airbags Deployed:</strong> 
+                        <span id="airbags-status" style="font-weight: bold;"></span>
+                    </div>
+                    <div>
+                        <strong>Vehicle Drivable:</strong> 
+                        <span id="drivable-status" style="font-weight: bold;"></span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -266,12 +303,44 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Display results
+                    // Display basic results
                     document.getElementById('car-make').textContent = result.data.metadata.make;
                     document.getElementById('car-model').textContent = result.data.metadata.model;
                     document.getElementById('car-color').textContent = result.data.metadata.color;
                     document.getElementById('damage-summary').textContent = result.data.damageSummary;
                     document.getElementById('estimated-cost').textContent = result.data.estimatedCost;
+                    
+                    // Display detailed cost breakdown if available
+                    if (result.data.costBreakdown) {
+                        const breakdown = result.data.costBreakdown;
+                        document.getElementById('parts-cost').textContent = `$${breakdown.breakdown.parts_and_labor.toLocaleString()}`;
+                        document.getElementById('paint-cost').textContent = `$${breakdown.breakdown.paint.toLocaleString()}`;
+                        document.getElementById('surcharge-cost').textContent = `$${breakdown.breakdown.surcharges.toLocaleString()}`;
+                        document.getElementById('midpoint-cost').textContent = `$${breakdown.midpoint.toLocaleString()}`;
+                        document.getElementById('cost-breakdown').classList.remove('hidden');
+                        
+                        // Show confidence
+                        const confidencePercent = Math.round(breakdown.confidence * 100);
+                        document.getElementById('confidence-value').textContent = `${confidencePercent}%`;
+                        document.getElementById('confidence-indicator').classList.remove('hidden');
+                    }
+                    
+                    // Display additional assessment info
+                    if (result.data.airbags_deployed !== undefined || result.data.drivable !== undefined) {
+                        if (result.data.airbags_deployed !== undefined) {
+                            const airbagsEl = document.getElementById('airbags-status');
+                            airbagsEl.textContent = result.data.airbags_deployed ? 'Yes' : 'No';
+                            airbagsEl.style.color = result.data.airbags_deployed ? '#e74c3c' : '#28a745';
+                        }
+                        
+                        if (result.data.drivable !== undefined) {
+                            const drivableEl = document.getElementById('drivable-status');
+                            drivableEl.textContent = result.data.drivable ? 'Yes' : 'No';
+                            drivableEl.style.color = result.data.drivable ? '#28a745' : '#e74c3c';
+                        }
+                        
+                        document.getElementById('additional-info').classList.remove('hidden');
+                    }
 
                     resultsSection.classList.remove('hidden');
                     message.textContent = '✅ AI analysis completed successfully!';

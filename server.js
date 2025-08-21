@@ -49,7 +49,24 @@ async function analyzeWithOpenAI(imageData) {
       role: "user",
       content: [{
         type: "text",
-        text: `Analyze this car damage photo. Respond with JSON only: {"make": "Toyota", "model": "Camry", "color": "Silver", "damage": "Front bumper dent with scratches"}`
+        text: `Analyze this car damage photo and provide a detailed assessment. Respond with JSON only in this exact format:
+
+{
+  "make": "Toyota",
+  "model": "Camry", 
+  "color": "Silver",
+  "parts": [
+    {"part": "front_bumper", "severity": "moderate"},
+    {"part": "hood", "severity": "minor"}
+  ],
+  "airbags_deployed": false,
+  "drivable": true,
+  "confidence": 0.8
+}
+
+Parts: front_bumper, rear_bumper, front_door, rear_door, hood, roof, fender, quarter_panel, trunk, windshield, rear_glass, side_glass, headlight, taillight, wheel, tire, frame
+Severity: minor, moderate, severe, catastrophic
+Confidence: 0.1 to 1.0 based on image clarity and damage visibility`
       }, {
         type: "image_url",
         image_url: { url: imageData }
@@ -104,21 +121,106 @@ async function analyzeWithOpenAI(imageData) {
   });
 }
 
-function estimateRepairCost(damageDescription) {
-  const damage = damageDescription.toLowerCase();
-  let baseCost = 300;
+function calculateRepairCost(assessmentData) {
+  // Base costs by part
+  const partCosts = {
+    front_bumper: 500,
+    rear_bumper: 500,
+    front_door: 800,
+    rear_door: 800,
+    hood: 1200,
+    roof: 2500,
+    fender: 700,
+    quarter_panel: 700,
+    trunk: 700,
+    windshield: 500,
+    rear_glass: 400,
+    side_glass: 400,
+    headlight: 300,
+    taillight: 300,
+    wheel: 400,
+    tire: 400,
+    frame: 2000
+  };
+
+  // Severity multipliers
+  const severityMultipliers = {
+    minor: 0.5,
+    moderate: 1.0,
+    severe: 2.0,
+    catastrophic: 3.0
+  };
+
+  // Exterior panels that need paint
+  const exteriorPanels = [
+    'front_bumper', 'rear_bumper', 'front_door', 'rear_door', 
+    'hood', 'roof', 'fender', 'quarter_panel', 'trunk'
+  ];
+
+  let subtotal = 0;
+  let paintCost = 0;
   
-  if (damage.includes('bumper')) baseCost += 500;
-  if (damage.includes('door')) baseCost += 800;
-  if (damage.includes('hood')) baseCost += 1200;
-  if (damage.includes('dent')) baseCost += 400;
-  if (damage.includes('scratch')) baseCost += 200;
-  if (damage.includes('significant') || damage.includes('major')) baseCost += 800;
+  // Calculate parts and labor
+  if (assessmentData.parts && Array.isArray(assessmentData.parts)) {
+    assessmentData.parts.forEach(partDamage => {
+      const baseCost = partCosts[partDamage.part] || 500;
+      const multiplier = severityMultipliers[partDamage.severity] || 1.0;
+      const partCost = baseCost * multiplier;
+      
+      subtotal += partCost;
+      
+      // Add paint cost for exterior panels
+      if (exteriorPanels.includes(partDamage.part)) {
+        paintCost += 200;
+      }
+    });
+  }
+
+  // Add surcharges
+  let surcharges = 0;
   
-  const minCost = Math.max(baseCost * 0.8, 200);
-  const maxCost = baseCost * 1.4;
+  // Airbags deployed
+  if (assessmentData.airbags_deployed) {
+    surcharges += 1500 * 2; // Assume 2 airbags if deployed
+  }
   
-  return `$${Math.round(minCost)} - $${Math.round(maxCost)}`;
+  // Non-drivable fee
+  if (assessmentData.drivable === false) {
+    surcharges += 300;
+  }
+
+  // Calculate total
+  const total = subtotal + paintCost + surcharges;
+  
+  // Enforce minimum of $600
+  const adjustedTotal = Math.max(total, 600);
+  
+  // Apply confidence range
+  const confidence = assessmentData.confidence || 0.7;
+  let rangePercent;
+  
+  if (confidence >= 0.8) {
+    rangePercent = 0.15; // ±15%
+  } else if (confidence >= 0.6) {
+    rangePercent = 0.25; // ±25%
+  } else {
+    rangePercent = 0.35; // ±35%
+  }
+  
+  const low = Math.round(adjustedTotal * (1 - rangePercent));
+  const high = Math.round(adjustedTotal * (1 + rangePercent));
+  const midpoint = Math.round(adjustedTotal);
+
+  return {
+    breakdown: {
+      parts_and_labor: subtotal,
+      paint: paintCost,
+      surcharges: surcharges
+    },
+    estimateRange: { low: low, high: high },
+    midpoint: midpoint,
+    confidence: confidence
+  };
 }
 
 async function findRealRepairShops(latitude, longitude) {
@@ -482,7 +584,14 @@ const server = http.createServer(async (req, res) => {
         const analysisResult = await analyzeWithOpenAI(imageData);
         console.log('✅ OpenAI analysis successful:', analysisResult);
         
-        const estimatedCost = estimateRepairCost(analysisResult.damage);
+        // Calculate sophisticated repair costs
+        const costBreakdown = calculateRepairCost(analysisResult);
+        console.log('💰 Cost breakdown:', costBreakdown);
+        
+        // Create damage summary from parts
+        const damageSummary = analysisResult.parts && analysisResult.parts.length > 0 
+          ? analysisResult.parts.map(p => `${p.part.replace('_', ' ')} (${p.severity})`).join(', ')
+          : 'Damage assessment completed';
         
         const response = {
           success: true,
@@ -492,8 +601,12 @@ const server = http.createServer(async (req, res) => {
               model: analysisResult.model,
               color: analysisResult.color
             },
-            damageSummary: analysisResult.damage,
-            estimatedCost: estimatedCost,
+            damageSummary: damageSummary,
+            costBreakdown: costBreakdown,
+            estimatedCost: `$${costBreakdown.estimateRange.low.toLocaleString()} - $${costBreakdown.estimateRange.high.toLocaleString()}`,
+            confidence: analysisResult.confidence,
+            airbags_deployed: analysisResult.airbags_deployed,
+            drivable: analysisResult.drivable,
             analysisMode: 'openai'
           }
         };

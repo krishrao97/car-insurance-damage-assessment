@@ -67,9 +67,9 @@ async function analyzeWithOpenAI(imageData) {
 }
 
 IMPORTANT RULES:
-- If no motor vehicle is visible: set vehicle_detected=false, damage_detected=false, parts=[]
-- If motor vehicle is visible but no damage: set vehicle_detected=true, damage_detected=false, parts=[]
-- Only if both vehicle AND damage are detected: populate make, model, color, and parts array
+- If no motor vehicle is visible: set vehicle_detected=false, damage_detected=false, parts=[], make/model/color can be empty
+- If motor vehicle is visible but no damage: set vehicle_detected=true, damage_detected=false, parts=[], but ALWAYS identify make/model/color
+- If both vehicle AND damage are detected: populate make, model, color, and parts array with damage details
 
 Parts: front_bumper, rear_bumper, front_door, rear_door, hood, roof, fender, quarter_panel, trunk, windshield, rear_glass, side_glass, headlight, taillight, wheel, tire, frame
 Severity: minor, moderate, severe, catastrophic
@@ -626,7 +626,7 @@ const server = http.createServer(async (req, res) => {
           metadata = { make: 'N/A', model: 'N/A', color: 'N/A' };
           estimatedCost = '$0';
         } else if (!analysisResult.damage_detected) {
-          damageSummary = 'Motor vehicle detected but no visible damage found';
+          damageSummary = 'No Damage Detected';
           metadata = {
             make: analysisResult.make || 'Unknown',
             model: analysisResult.model || 'Unknown',

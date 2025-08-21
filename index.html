@@ -256,8 +256,8 @@
                     imageData = urlInput;
                 }
 
-                // Call our working backend
-                const response = await fetch('http://localhost:3001/api/analyze-simple', {
+                // Call our backend (works locally and deployed)
+                const response = await fetch('/api/analyze-simple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ imageData: imageData })
@@ -349,7 +349,7 @@
 
         async function geocodeLocation(locationText) {
             try {
-                const response = await fetch('http://localhost:3001/api/geocode', {
+                const response = await fetch('/api/geocode', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -398,7 +398,7 @@
                     }
                 }
 
-                const response = await fetch('http://localhost:3001/api/repair-shops', {
+                const response = await fetch('/api/repair-shops', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

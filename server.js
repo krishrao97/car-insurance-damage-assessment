@@ -2,13 +2,17 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 
-// Load environment variables from .env file
-require('fs').readFileSync('.env', 'utf8').split('\n').forEach(line => {
-  const [key, value] = line.split('=');
-  if (key && value) process.env[key] = value;
-});
+// Load environment variables from .env file (if it exists)
+try {
+  require('fs').readFileSync('.env', 'utf8').split('\n').forEach(line => {
+    const [key, value] = line.split('=');
+    if (key && value) process.env[key] = value;
+  });
+} catch (err) {
+  console.log('No .env file found, using environment variables');
+}
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // API Keys from environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'your-openai-api-key-here';
@@ -416,6 +420,20 @@ const server = http.createServer(async (req, res) => {
   }
 
   const parsedUrl = url.parse(req.url, true);
+  
+  // Serve static files
+  if (req.method === 'GET' && parsedUrl.pathname === '/') {
+    fs.readFile('./index.html', (err, data) => {
+      if (err) {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end('<h1>404 Not Found</h1>');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(data);
+    });
+    return;
+  }
   
   if (req.method === 'GET' && parsedUrl.pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });

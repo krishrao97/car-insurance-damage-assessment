@@ -566,7 +566,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚗 Car Insurance App Server running on http://localhost:${PORT}`);
+  console.log(`🚗 Car Insurance App Server running on port ${PORT}`);
   console.log(`✅ OpenAI Vision API integration active`);
   console.log(`🌍 Google Places API integration active`);
   console.log(`📝 Endpoints:`);

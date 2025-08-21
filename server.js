@@ -14,9 +14,22 @@ try {
 
 const PORT = process.env.PORT || 3001;
 
-// API Keys from environment variables
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'your-openai-api-key-here';
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || 'your-google-places-api-key-here';
+// API Keys from environment variables (sanitized)
+const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || 'your-openai-api-key-here').trim().replace(/['"]/g, '');
+const GOOGLE_API_KEY = (process.env.GOOGLE_API_KEY || 'your-google-places-api-key-here').trim().replace(/['"]/g, '');
+
+// Validate API keys on startup
+if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your-openai-api-key-here') {
+  console.warn('⚠️  OPENAI_API_KEY not configured properly');
+}
+if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'your-google-places-api-key-here') {
+  console.warn('⚠️  GOOGLE_API_KEY not configured properly');
+}
+
+console.log('🔑 API Keys loaded:', {
+  openai: OPENAI_API_KEY ? `${OPENAI_API_KEY.substring(0, 8)}...` : 'NOT SET',
+  google: GOOGLE_API_KEY ? `${GOOGLE_API_KEY.substring(0, 8)}...` : 'NOT SET'
+});
 
 async function analyzeWithOpenAI(imageData) {
   const https = require('https');

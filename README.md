@@ -31,17 +31,23 @@ A complete car insurance damage assessment application with AI-powered image ana
 
 ### Installation
 
-1. **Clone/Navigate to the project directory**
+1. **Clone the repository**
    ```bash
-   cd car_insurance_prototype_app_v2
+   git clone https://github.com/YOUR_USERNAME/car-insurance-damage-assessment.git
+   cd car-insurance-damage-assessment
    ```
 
 2. **Configure API Keys**
    
-   Edit `server.js` and replace the API keys:
-   ```javascript
-   const OPENAI_API_KEY = 'your-openai-api-key-here';
-   const GOOGLE_API_KEY = 'your-google-places-api-key-here';
+   Create a `.env` file in the project root:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` and add your API keys:
+   ```
+   OPENAI_API_KEY=your-openai-api-key-here
+   GOOGLE_API_KEY=your-google-places-api-key-here
    ```
 
 3. **Start the Backend Server**

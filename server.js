@@ -15,8 +15,17 @@ try {
 const PORT = process.env.PORT || 3001;
 
 // API Keys from environment variables (sanitized)
-const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || 'your-openai-api-key-here').trim().replace(/['"]/g, '');
-const GOOGLE_API_KEY = (process.env.GOOGLE_API_KEY || 'your-google-places-api-key-here').trim().replace(/['"]/g, '');
+const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || 'your-openai-api-key-here')
+  .trim()
+  .replace(/['"]/g, '')
+  .replace(/[\r\n\t]/g, '')
+  .replace(/\s+/g, '');
+
+const GOOGLE_API_KEY = (process.env.GOOGLE_API_KEY || 'your-google-places-api-key-here')
+  .trim()
+  .replace(/['"]/g, '')
+  .replace(/[\r\n\t]/g, '')
+  .replace(/\s+/g, '');
 
 // Validate API keys on startup
 if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your-openai-api-key-here') {

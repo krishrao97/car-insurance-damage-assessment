@@ -49,9 +49,11 @@ async function analyzeWithOpenAI(imageData) {
       role: "user",
       content: [{
         type: "text",
-        text: `Analyze this car damage photo and provide a detailed assessment. Respond with JSON only in this exact format:
+        text: `Analyze this image for car damage assessment. First determine if this shows a motor vehicle with visible damage. Respond with JSON only in this exact format:
 
 {
+  "vehicle_detected": true,
+  "damage_detected": true,
   "make": "Toyota",
   "model": "Camry", 
   "color": "Silver",
@@ -63,6 +65,11 @@ async function analyzeWithOpenAI(imageData) {
   "drivable": true,
   "confidence": 0.8
 }
+
+IMPORTANT RULES:
+- If no motor vehicle is visible: set vehicle_detected=false, damage_detected=false, parts=[]
+- If motor vehicle is visible but no damage: set vehicle_detected=true, damage_detected=false, parts=[]
+- Only if both vehicle AND damage are detected: populate make, model, color, and parts array
 
 Parts: front_bumper, rear_bumper, front_door, rear_door, hood, roof, fender, quarter_panel, trunk, windshield, rear_glass, side_glass, headlight, taillight, wheel, tire, frame
 Severity: minor, moderate, severe, catastrophic
@@ -103,6 +110,15 @@ Confidence: 0.1 to 1.0 based on image clarity and damage visibility`
             }
             
             const result = JSON.parse(content);
+            
+            // Handle backward compatibility - if new fields are missing, infer them
+            if (result.vehicle_detected === undefined) {
+              result.vehicle_detected = !!(result.make || result.model || result.parts);
+            }
+            if (result.damage_detected === undefined) {
+              result.damage_detected = !!(result.parts && result.parts.length > 0);
+            }
+            
             resolve(result);
           } else {
             reject(new Error('Invalid OpenAI response'));
@@ -122,6 +138,20 @@ Confidence: 0.1 to 1.0 based on image clarity and damage visibility`
 }
 
 function calculateRepairCost(assessmentData) {
+  // Return zero cost if no vehicle or no damage detected
+  if (!assessmentData.vehicle_detected || !assessmentData.damage_detected || !assessmentData.parts || assessmentData.parts.length === 0) {
+    return {
+      breakdown: {
+        parts_and_labor: 0,
+        paint: 0,
+        surcharges: 0
+      },
+      estimateRange: { low: 0, high: 0 },
+      midpoint: 0,
+      confidence: assessmentData.confidence || 1.0
+    };
+  }
+
   // Base costs by part
   const partCosts = {
     front_bumper: 500,
@@ -588,22 +618,41 @@ const server = http.createServer(async (req, res) => {
         const costBreakdown = calculateRepairCost(analysisResult);
         console.log('💰 Cost breakdown:', costBreakdown);
         
-        // Create damage summary from parts
-        const damageSummary = analysisResult.parts && analysisResult.parts.length > 0 
-          ? analysisResult.parts.map(p => `${p.part.replace('_', ' ')} (${p.severity})`).join(', ')
-          : 'Damage assessment completed';
+        // Handle different scenarios based on detection results
+        let damageSummary, metadata, estimatedCost;
+        
+        if (!analysisResult.vehicle_detected) {
+          damageSummary = 'No motor vehicle detected in this image';
+          metadata = { make: 'N/A', model: 'N/A', color: 'N/A' };
+          estimatedCost = '$0';
+        } else if (!analysisResult.damage_detected) {
+          damageSummary = 'Motor vehicle detected but no visible damage found';
+          metadata = {
+            make: analysisResult.make || 'Unknown',
+            model: analysisResult.model || 'Unknown',
+            color: analysisResult.color || 'Unknown'
+          };
+          estimatedCost = '$0';
+        } else {
+          // Normal damage case
+          damageSummary = analysisResult.parts && analysisResult.parts.length > 0 
+            ? analysisResult.parts.map(p => `${p.part.replace('_', ' ')} (${p.severity})`).join(', ')
+            : 'Damage assessment completed';
+          metadata = {
+            make: analysisResult.make,
+            model: analysisResult.model,
+            color: analysisResult.color
+          };
+          estimatedCost = `$${costBreakdown.estimateRange.low.toLocaleString()} - $${costBreakdown.estimateRange.high.toLocaleString()}`;
+        }
         
         const response = {
           success: true,
           data: {
-            metadata: {
-              make: analysisResult.make,
-              model: analysisResult.model,
-              color: analysisResult.color
-            },
+            metadata: metadata,
             damageSummary: damageSummary,
             costBreakdown: costBreakdown,
-            estimatedCost: `$${costBreakdown.estimateRange.low.toLocaleString()} - $${costBreakdown.estimateRange.high.toLocaleString()}`,
+            estimatedCost: estimatedCost,
             confidence: analysisResult.confidence,
             airbags_deployed: analysisResult.airbags_deployed,
             drivable: analysisResult.drivable,

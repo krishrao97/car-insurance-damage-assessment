@@ -155,19 +155,6 @@
                 </div>
             </div>
 
-            <div id="additional-info" class="result-card hidden">
-                <h3>Additional Assessment</h3>
-                <div style="display: flex; gap: 2rem;">
-                    <div>
-                        <strong>Airbags Deployed:</strong> 
-                        <span id="airbags-status" style="font-weight: bold;"></span>
-                    </div>
-                    <div>
-                        <strong>Vehicle Drivable:</strong> 
-                        <span id="drivable-status" style="font-weight: bold;"></span>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div id="location-section" class="step-section hidden">
@@ -325,22 +312,6 @@
                         document.getElementById('confidence-indicator').classList.remove('hidden');
                     }
                     
-                    // Display additional assessment info
-                    if (result.data.airbags_deployed !== undefined || result.data.drivable !== undefined) {
-                        if (result.data.airbags_deployed !== undefined) {
-                            const airbagsEl = document.getElementById('airbags-status');
-                            airbagsEl.textContent = result.data.airbags_deployed ? 'Yes' : 'No';
-                            airbagsEl.style.color = result.data.airbags_deployed ? '#e74c3c' : '#28a745';
-                        }
-                        
-                        if (result.data.drivable !== undefined) {
-                            const drivableEl = document.getElementById('drivable-status');
-                            drivableEl.textContent = result.data.drivable ? 'Yes' : 'No';
-                            drivableEl.style.color = result.data.drivable ? '#28a745' : '#e74c3c';
-                        }
-                        
-                        document.getElementById('additional-info').classList.remove('hidden');
-                    }
 
                     resultsSection.classList.remove('hidden');
                     message.textContent = '✅ AI analysis completed successfully!';

@@ -280,7 +280,7 @@
                     imageData = urlInput;
                 }
 
-                // Call our backend (works locally and deployed)
+                // Call our backend API
                 const response = await fetch('/api/analyze-simple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

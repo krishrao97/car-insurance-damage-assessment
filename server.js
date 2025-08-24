@@ -45,6 +45,7 @@ async function analyzeWithOpenAI(imageData) {
   
   const requestBody = JSON.stringify({
     model: "gpt-4o-mini",
+    temperature: 0,
     messages: [{
       role: "user",
       content: [{
@@ -601,7 +602,7 @@ const server = http.createServer(async (req, res) => {
     
     req.on('end', async () => {
       try {
-        console.log('🎯 Received analysis request');
+        console.log('🎯 Received analysis request from:', req.headers.origin || 'unknown origin');
         
         // Parse JSON body (from our working frontend)
         const data = JSON.parse(body);

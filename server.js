@@ -313,12 +313,12 @@ async function findRealRepairShops(latitude, longitude) {
                     phone: details[index]?.phone,
                     website: details[index]?.website,
                     hours: details[index]?.hours
-                  }));
+                  })).sort((a, b) => a.distance - b.distance);
                   resolve(enrichedShops);
                 })
                 .catch(() => {
-                  // If details fail, return basic info
-                  resolve(shops);
+                  // If details fail, return basic info sorted by distance
+                  resolve(shops.sort((a, b) => a.distance - b.distance));
                 });
             } else {
               console.log('Google Places API error:', result.status, result.error_message);

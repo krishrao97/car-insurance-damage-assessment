@@ -124,6 +124,16 @@ Confidence: 0.1 to 1.0 based on image clarity and damage visibility`
             }
             
             resolve(result);
+          } else if (response.error) {
+            // Handle OpenAI API errors
+            console.error('❌ OpenAI API error:', response.error);
+            
+            let errorMessage = response.error.message;
+            if (response.error.code === 'invalid_image_url') {
+              errorMessage = 'Unable to access the image URL. Please ensure the image is publicly accessible and try again, or upload the image file directly instead.';
+            }
+            
+            reject(new Error(errorMessage));
           } else {
             console.error('❌ Invalid OpenAI response structure:', response);
             reject(new Error(`Invalid OpenAI response: ${JSON.stringify(response)}`));

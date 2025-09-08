@@ -329,7 +329,7 @@
 
                     resultsSection.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    message.textContent = '❌ Analysis failed: ' + result.error;
+                    message.textContent = '❌ ' + (result.message || result.error || 'Analysis failed');
                     message.style.color = '#dc3545';
                 }
             } catch (error) {

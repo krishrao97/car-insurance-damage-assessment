@@ -102,6 +102,9 @@ Confidence: 0.1 to 1.0 based on image clarity and damage visibility`
       res.on('end', () => {
         try {
           const response = JSON.parse(data);
+          console.log('🔍 OpenAI response status:', res.statusCode);
+          console.log('🔍 OpenAI response:', JSON.stringify(response, null, 2));
+          
           if (response.choices && response.choices[0]) {
             let content = response.choices[0].message.content;
             
@@ -122,7 +125,8 @@ Confidence: 0.1 to 1.0 based on image clarity and damage visibility`
             
             resolve(result);
           } else {
-            reject(new Error('Invalid OpenAI response'));
+            console.error('❌ Invalid OpenAI response structure:', response);
+            reject(new Error(`Invalid OpenAI response: ${JSON.stringify(response)}`));
           }
         } catch (error) {
           console.error('🔥 JSON parsing error in OpenAI response:', error);
